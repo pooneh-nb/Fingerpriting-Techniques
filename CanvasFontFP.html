@@ -1,10 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE HTML>
+<html lang="en-US">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+	<meta charset="UTF-8">
+	<title>Canvas Font Fingerprinting</title>
+	<script src="https://raw.githubusercontent.com/dchest/blake2s-js/master/blake2s.min.js" content=""></script>
 </head>
 <body>
-$END$
+	<progress id="pr"></progress>
+	<div id="res"></div>
+		<script>
+		console.log("loaded");
+		document.addEventListener("DOMContentLoaded",()=>{
+			let canv=document.createElement("CANVAS");
+			const windSize=200;
+			const countOfIts=10;
+			canv.height=canv.width=windSize;
+			canv.style.height=canv.style.width=windSize+"em";
+			let ctx=canv.getContext("2d");
+			ctx.fillStyle = "black";
+			let alphabet=[
+				[0x20,0x7F],//latin
+				[0xA0,0xFF],//exlat
+				[0x400,0x52F],//cyr
+				[0x370,0x3FF],//greek
+				[0x2200,0x22FF],//math
+				[0x20A0,0x20CF],//currency
+			];
+			let fonts=["Times New Roman","Arial","Calibri","Cambria","Impact","Courier New","Consolas","Inconsolata","Inconsolata LGC","Ubuntu Mono","Ubuntu Mono",,"Ubuntu Mono","Lucida Handwriting", "Wingdings", "Droid Sans"];
+			function a(){
+				for(let a of alphabet){
+					for(let i=a[0];i<=a[1];i++)yield String.fromCharCode(i);
+				}
+			}
+			function objToArr(obj){
+				let arr=[];
+				for(var p in obj){
+					arr.push(obj[p]);
+				}
+				return arr;
+			}
+			Math.LN2=Math.LN2||Math.log(2);
+			Math.log2=Math.log2||((n)=>Math.log(n)/Math.LN2);
+
+			let alphabetLength=alphabet.map((a)=>a[1]-a[0]+1).reduce((a,b)=>a+b);
+			let tot=alphabetLength*fonts.length;
+			let blkLen=Math.ceil(Math.log2(tot));
+			let prb=document.getElementById("pr");
+			prb.value=0;
+			let curr=0;
+			console.log("Hiiiiii", curr,tot,blkLen);
+			console.log("started");
+			let res=document.cookie.length?JSON.parse(document.cookie):({"it":0,"fonts":{}});
+
+			let fontsToProc=fonts.filter((f)=>typeof res.fonts[f]=="undefined");
+			let resultBox=document.getElementById("res");
+			if(fontsToProc.length==0||res.it==countOfIts){
+				resultBox.innerHTML=JSON.stringify(res.fonts);
+				resultBox.style.display="block";
+				document.cookie="";
+				return;
+			}
+			resultBox.innerHTML=res.it+"/"+countOfIts;
+			function hashFont(f){
+				let bl=new BLAKE2s(blkLen, []);
+				ctx.font=Math.floor(windSize*0.9)+"em "+f;
+				for(let c of a()){
+					ctx.clearRect(0,0,windSize,windSize);
+					bl.update(objToArr(ctx.measureText(c)));
+					prb.value=(++curr)/tot;
+				}
+				let dig=bl.hexDigest();
+				if(dig!=res.fonts["Times New Roman"]){
+					res.fonts[f]=dig;
+				}
+			}
+
+			for(let f of fontsToProc){
+				hashFont(f);
+			}
+
+			res.it++;
+			document.cookie=JSON.stringify(res);
+			window.location.reload();
+		},false);
+	</script>
 </body>
 </html>
