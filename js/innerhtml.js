@@ -1,6 +1,6 @@
 const main = document.getElementById('main');
 
-const externalHTML = `<img src='media/dl.png' onerror='alert("Error loading image")'>`;
+const externalHTML = `<img id="from_js_img" src='media/dl.png' onerror='alert("Error loading image")'>`;
 
 main.innerHTML = externalHTML;
 
